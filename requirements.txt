@@ -1,0 +1,9 @@
+asgiref==3.7.2
+Django==4.2
+sqlparse==0.4.4
+djangorestframework
+django-cors-headers
+djangorestframework-simplejwt
+pillow
+python-dotenv
+psycopg2
