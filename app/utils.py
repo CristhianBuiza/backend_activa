@@ -7,78 +7,56 @@ def is_ajax(request):
   return request.headers.get('x-requested-with') == 'XMLHttpRequest'
 
 
-def get_encoded_faces():
+def get_encoded_faces(username):
     """
     This function loads all user 
     profile images and encodes their faces
     """
     # Retrieve all user profiles from the database
-    qs = Profile.objects.all()
+    try:
+        user_profile = Profile.objects.get(user__username=username)
+    except Profile.DoesNotExist:
+        print(f"No se encontró el perfil para el usuario: {username}")
+        return None
+    if not user_profile.photo:
+        print(f"No hay foto asociada al perfil de {username}")
+        return None
+
 
     # Create a dictionary to hold the encoded face for each user
-    encoded = {}
-
-    for p in qs:
-        # Initialize the encoding variable with None
-        encoding = None
-
-        # Load the user's profile image
-        face = fr.load_image_file(p.photo.path)
-
-        # Encode the face (if detected)
-        face_encodings = fr.face_encodings(face)
-        if len(face_encodings) > 0:
-            encoding = face_encodings[0]
-        else:
-            print("No face found in the image")
-
-        # Add the user's encoded face to the dictionary if encoding is not None
-        if encoding is not None:
-            encoded[p.user.username] = encoding
-
-    # Return the dictionary of encoded faces
-    return encoded
-
-
-def classify_face(img):
-    """
-    This function takes an image as input and returns the name of the face it contains
-    """
-    # Load all the known faces and their encodings
-    faces = get_encoded_faces()
-    faces_encoded = list(faces.values())
-    known_face_names = list(faces.keys())
-
-    # Load the input image
-    img = fr.load_image_file(img)
- 
     try:
-        # Find the locations of all faces in the input image
-        face_locations = fr.face_locations(img)
+        # Carga la imagen del perfil y codifica la cara
+        face_image = fr.load_image_file(user_profile.photo.path)
+        face_encodings = fr.face_encodings(face_image)
 
-        # Encode the faces in the input image
-        unknown_face_encodings = fr.face_encodings(img, face_locations)
+        if face_encodings:
+            # Devuelve la primera codificación facial encontrada
+            return face_encodings[0]
+        else:
+            print(f"No se encontró ninguna cara en la imagen de {username}")
+            return None
+    except Exception as e:
+        print(f"Error al cargar o codificar la foto de {username}: {e}")
+        return None
 
-        # Identify the faces in the input image
-        face_names = []
-        for face_encoding in unknown_face_encodings:
-            # Compare the encoding of the current face to the encodings of all known faces
-            matches = fr.compare_faces(faces_encoded, face_encoding)
+def classify_face(img_path, username):
+    """
+    Compara la imagen proporcionada con la imagen de perfil del usuario especificado,
+    y retorna el nombre del usuario si las caras coinciden, o "Unknown" si no.
+    """
+    user_face_encoding = get_encoded_faces(username)  # Obtiene la codificación de la cara del usuario especificado
 
-            # Find the known face with the closest encoding to the current face
-            face_distances = fr.face_distance(faces_encoded, face_encoding)
-            best_match_index = np.argmin(face_distances)
+    if user_face_encoding is None:
+        print(f"No se encontró la codificación de la cara para el usuario {username}")
+        return "Unknown"
 
-            # If the closest known face is a match for the current face, label the face with the known name
-            if matches[best_match_index]:
-                name = known_face_names[best_match_index]
-            else:
-                name = "Unknown"
+    # Carga la imagen proporcionada y encuentra codificaciones faciales
+    img_to_classify = fr.load_image_file(img_path)
+    unknown_face_encodings = fr.face_encodings(img_to_classify)
 
-            face_names.append(name)
+    for unknown_face_encoding in unknown_face_encodings:
+        results = fr.compare_faces([user_face_encoding], unknown_face_encoding)
+        if True in results:
+            return username  # La cara coincide con la del usuario
 
-        # Return the name of the first face in the input image
-        return face_names[0]
-    except:
-        # If no faces are found in the input image or an error occurs, return False
-        return False
+    return "Unknown"
