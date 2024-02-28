@@ -8,9 +8,10 @@ import uuid
 from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
+    role = serializers.ChoiceField(choices=Profile.ROLE_CHOICES, write_only=True, required=False)
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'password', 'first_name', 'last_name')
+        fields = ('id', 'username', 'email', 'password', 'first_name', 'last_name', 'role')
         extra_kwargs = {'password': {'write_only': True, 'required': True}}
 
     def validate_email(self, value):
@@ -24,16 +25,12 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        user = validated_data.pop('user', None)
-        password = validated_data.pop('password', None)
-        instance = self.Meta.model(**validated_data)
-        if password is not None:
-            instance.set_password(password)
-        if user is not None:
-            instance.user = user
-
-        instance.save()
-        return instance
+        role = validated_data.pop('role', None)
+        user = super().create(validated_data)
+        user.set_password(validated_data['password'])
+        user.save()
+        Profile.objects.create(user=user, role=role) 
+        return {'id': user.id, 'username': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name, 'role': role}
     
 class UserRecognitionSerializer(serializers.ModelSerializer):
     photo_base64 = serializers.CharField(write_only=True, allow_blank=True, required=False)
