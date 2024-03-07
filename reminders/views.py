@@ -7,15 +7,19 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth.models import User
 from app.helpers.get_user_by_token import get_user_by_token
+from drf_yasg.utils import swagger_auto_schema
 
 # Create your views here.
+
 class ReminderView(APIView):
+    @swagger_auto_schema(responses={200: ReminderSerializer(many=True)})
     def get(self, request):  
         user = get_user_by_token(request)
         reminders = Reminder.objects.filter(user=user)
         serializer = ReminderSerializer(reminders, many=True)
         return Response(serializer.data)
         
+    @swagger_auto_schema(request_body=ReminderSerializer, responses={200: ReminderSerializer})
     def post(self, request):
         # create a new reminder
         user = get_user_by_token(request)
@@ -29,7 +33,7 @@ class ReminderView(APIView):
             return Response(serializer.errors, status=400)
 
         
-
+    @swagger_auto_schema(request_body=ReminderSerializer(partial=True), responses={200: ReminderSerializer})
     def put(self, request, pk):
         # Update a reminder
         user = get_user_by_token(request)
@@ -41,7 +45,7 @@ class ReminderView(APIView):
         if serializer.is_valid(raise_exception=True):
             reminder = serializer.save()
         return Response(serializer.data)
-
+    @swagger_auto_schema(responses={204: 'Reminder deleted successfully', 404: 'Reminder not found'})
     def delete(self, request, pk):
         # Get object with this pk
         
