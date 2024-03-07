@@ -3,7 +3,7 @@ from .models import Profile
 from django.core.files.base import ContentFile
 import base64
 import uuid
-
+from django.db import IntegrityError, transaction
 # User
 from django.contrib.auth.models import User
 
@@ -26,12 +26,29 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         role = validated_data.pop('role', None)
-        user = super().create(validated_data)
-        user.set_password(validated_data['password'])
-        user.save()
-        Profile.objects.create(user=user, role=role) 
+        user = None
+        try:
+            with transaction.atomic():
+                user = super().create(validated_data)
+                user.set_password(validated_data['password'])
+                user.save()
+                # Check if the user already has a profile to avoid IntegrityError
+                profile, created = Profile.objects.get_or_create(user=user)
+                if not created:
+                    # Optionally update the profile's role if it already exists
+                    profile.role = role
+                    profile.save()
+                else:
+                    profile.role = role
+                    profile.save()
+        except IntegrityError as e:
+            # Handle the unique constraint violation
+            print(f"Error creating user profile: {e}")
+            # Optionally, you could raise a custom validation error to be handled by the API response
+            raise serializers.ValidationError("A profile for this user already exists.")
+
         return {'id': user.id, 'username': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name, 'role': role}
-    
+        
 class UserRecognitionSerializer(serializers.ModelSerializer):
     photo_base64 = serializers.CharField(write_only=True, allow_blank=True, required=False)
 

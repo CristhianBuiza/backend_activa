@@ -3,7 +3,7 @@ from django.urls import path, include,re_path
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
-
+from django.views.generic import RedirectView
 from .views import home_view, login_view, logout_view, find_user_view
 
 schema_view = get_schema_view(
@@ -22,7 +22,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', home_view, name='home'),
+    re_path(r'^$', RedirectView.as_view(url='/admin/', permanent=True)),
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
     path('api/', include('profiles.urls')),

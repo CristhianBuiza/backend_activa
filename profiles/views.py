@@ -15,18 +15,30 @@ from rest_framework import status
 # Create your views here.
 class RegisterView(APIView):
     def post(self, request):
-        serializer=UserSerializer(data=request.data)
+        serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
+            user_data = serializer.save()
+            user = User.objects.get(username=user_data['username'])
+
+            # Generar el token JWT para el nuevo usuario
+            payload = {
+                "id": user.id,
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
+                'iat': datetime.datetime.utcnow()
+            }
+            token = jwt.encode(payload, 'secret', algorithm='HS256')
+
+            # Devolver el token y los datos del usuario en la respuesta
+            return Response({
+                'token': token,
+                **user_data
+            })
         else:
-            return Response(
-                {
-                    "status": "400",
-                    "message":"Error en el registro",
-                    "errors":serializer.errors
-                }
-                , status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "status": "400",
+                "message": "Error en el registro",
+                "errors": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
    
 class LoginView(APIView):
     def post(self, request):
