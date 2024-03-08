@@ -39,10 +39,10 @@ class RegisterView(APIView):
             }, status = status.HTTP_201_CREATED)
         else:
             return Response({
-                "status": "400",
+                "status": status.HTTP_401_UNAUTHORIZED,
                 "message": "Error en el registro",
                 "errors": serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST)
+            }, status=status.HTTP_401_UNAUTHORIZED)
    
 class LoginView(APIView):
     @swagger_auto_schema(request_body=openapi.Schema(
@@ -64,7 +64,10 @@ class LoginView(APIView):
         user = User.objects.filter(username=username).first()
         image_base64=request.data.get('image_base64')
         if user is None:
-            raise AuthenticationFailed('Invalid username')
+            return Response({
+                "status": status.HTTP_401_UNAUTHORIZED,
+                "message": "No user provided",
+            }, status=status.HTTP_401_UNAUTHORIZED)
         
         if image_base64:
             x = Log()
@@ -76,11 +79,17 @@ class LoginView(APIView):
             if res == user.username:
                 pass
             else:
-                raise AuthenticationFailed('Invalid face')
+                return Response({
+                "status": status.HTTP_401_UNAUTHORIZED,
+                "message": "Face recognition failed",
+                }, status=status.HTTP_401_UNAUTHORIZED)
         if user.check_password(password):
             pass
         else:
-            raise PermissionDenied('Invalid password')
+            return Response({
+                "status": status.HTTP_401_UNAUTHORIZED,
+                "message": "Password invalid",
+                }, status=status.HTTP_401_UNAUTHORIZED)
         
         payload = {
             "id":user.id,
@@ -107,11 +116,17 @@ class UserView(APIView):
     def get(self, request):
         token = request.COOKIES.get('jwt')
         if not token:
-            raise AuthenticationFailed('Unauthenticated')
+            return Response({
+                "status": status.HTTP_401_UNAUTHORIZED,
+                "message": "Incorrect authentication credentials",
+                }, status=status.HTTP_401_UNAUTHORIZED)
         try:
             payload = jwt.decode(token, 'secret', algorithms=['HS256'])
         except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Unauthenticated')
+            return Response({
+                "status": status.HTTP_401_UNAUTHORIZED,
+                "message": "Incorrect authentication credentials",
+                }, status=status.HTTP_401_UNAUTHORIZED)
         user = User.objects.filter(id=payload['id']).first()
         serializer = UserSerializer(user)
         return Response(serializer.data)
@@ -128,11 +143,17 @@ class ProfileUpdateView(APIView):
     def patch(self, request):
         token = request.COOKIES.get('jwt')
         if not token:
-            raise AuthenticationFailed('Unauthenticated')
+            return Response({
+                "status": status.HTTP_401_UNAUTHORIZED,
+                "message": "Incorrect authentication credentials",
+                }, status=status.HTTP_401_UNAUTHORIZED)
         try:
             payload = jwt.decode(token, 'secret', algorithms=['HS256'])
         except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Unauthenticated')
+            return Response({
+                "status": status.HTTP_401_UNAUTHORIZED,
+                "message": "Incorrect authentication credentials",
+                }, status=status.HTTP_401_UNAUTHORIZED)
 
         user = User.objects.filter(id=payload['id']).first()
         profile = Profile.objects.get(user=user)
