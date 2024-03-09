@@ -4,8 +4,8 @@ from django.core.files.base import ContentFile
 import base64
 import uuid
 from django.db import IntegrityError, transaction
-# User
 from django.contrib.auth.models import User
+import re
 
 class UserSerializer(serializers.ModelSerializer):
     role = serializers.ChoiceField(choices=Profile.ROLE_CHOICES, write_only=True, required=False)
@@ -14,6 +14,23 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'username', 'email', 'password', 'first_name', 'last_name', 'role')
         extra_kwargs = {'password': {'write_only': True, 'required': True}}
 
+    def validate_username(self, value):
+        if len(value) < 4:
+            raise serializers.ValidationError("El nombre de usuario debe tener al menos 4 caracteres.")
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Un usuario con este nombre de usuario ya existe.")
+        return value
+    
+    def validate_first_name(self, value):
+        if not re.match("^[A-Za-z]+(?:[ '-][A-Za-z]+)*$", value) or len(value) < 2:
+            raise serializers.ValidationError("El nombre debe contener solo letras y tener más de un carácter.")
+        return value
+    
+    def validate_last_name(self, value):
+        if not re.match("^[A-Za-z]+(?:[ '-][A-Za-z]+)*$", value) or len(value) < 2:
+            raise serializers.ValidationError("El apellido debe contener solo letras y tener más de un carácter.")
+        return value
+    
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("Un usuario con este email ya existe.")

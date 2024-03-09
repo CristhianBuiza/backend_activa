@@ -7,13 +7,13 @@ from .models import Profile
 from logs.models import Log
 from .serializers import UserSerializer,UserRecognitionSerializer
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from django.contrib.auth.models import User
 from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework import status
+from app.helpers.normalize_response import NormalizeResponse
 # Create your views here.
 class RegisterView(APIView):
     @swagger_auto_schema(request_body=UserSerializer, responses={200: UserSerializer})
@@ -22,8 +22,6 @@ class RegisterView(APIView):
         if serializer.is_valid():
             user_data = serializer.save()
             user = User.objects.get(username=user_data['username'])
-
-            # Generar el token JWT para el nuevo usuario
             payload = {
                 "id": user.id,
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
@@ -32,18 +30,12 @@ class RegisterView(APIView):
             token = jwt.encode(payload, 'secret', algorithm='HS256')
             response_data = serializer.data
             response_data['token'] = token
-            # Devolver el token y los datos del usuario en la respuesta
-            return Response({
-                'status': status.HTTP_201_CREATED,
-                'data': response_data
-            }, status = status.HTTP_201_CREATED)
+            response = NormalizeResponse(response_data, status.HTTP_201_CREATED, "Usuario creado correctamente")
+            response.set_cookie('jwt', token, httponly=True)
+            return response
         else:
-            return Response({
-                "status": status.HTTP_401_UNAUTHORIZED,
-                "message": "Error en el registro",
-                "errors": serializer.errors
-            }, status=status.HTTP_401_UNAUTHORIZED)
-   
+            return NormalizeResponse(serializer.errors, status.HTTP_401_UNAUTHORIZED, "Error en el registro")
+
 class LoginView(APIView):
     @swagger_auto_schema(request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
@@ -59,15 +51,21 @@ class LoginView(APIView):
         }
     )})
     def post(self, request):
+        # Get authentication with cookies
+        if request.COOKIES.get('jwt'):
+            return NormalizeResponse(
+            status= status.HTTP_401_UNAUTHORIZED,
+            message= "Ya ha iniciado sesión"
+            )
         username=request.data.get('username')
         password=request.data.get('password')
         user = User.objects.filter(username=username).first()
         image_base64=request.data.get('image_base64')
         if user is None:
-            return Response({
-                "status": status.HTTP_401_UNAUTHORIZED,
-                "message": "No user provided",
-            }, status=status.HTTP_401_UNAUTHORIZED)
+            return NormalizeResponse(
+            status= status.HTTP_401_UNAUTHORIZED,
+            message= "Usuario no encontrado"
+            )
         
         if image_base64:
             x = Log()
@@ -79,30 +77,26 @@ class LoginView(APIView):
             if res == user.username:
                 pass
             else:
-                return Response({
-                "status": status.HTTP_401_UNAUTHORIZED,
-                "message": "Face recognition failed",
-                }, status=status.HTTP_401_UNAUTHORIZED)
+                return NormalizeResponse(
+                status= status.HTTP_401_UNAUTHORIZED,
+                message= "Face recognition failed"
+                )
         if user.check_password(password):
             pass
         else:
-            return Response({
-                "status": status.HTTP_401_UNAUTHORIZED,
-                "message": "Password invalid",
-                }, status=status.HTTP_401_UNAUTHORIZED)
-        
+            return NormalizeResponse(
+            status= status.HTTP_401_UNAUTHORIZED,
+            message= "Password invalid"
+            )
+
         payload = {
             "id":user.id,
             'exp':datetime.datetime.utcnow()+datetime.timedelta(minutes=60),
             'iat': datetime.datetime.utcnow()
         }
        
-
         token = jwt.encode(payload, 'secret', algorithm='HS256')
-        
-        response = Response(
-            {"status": status.HTTP_200_OK, 'message': 'success', 'data': {'token': token, 'id': user.id, 'username': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name,}}
-        )
+        response = NormalizeResponse({'token': token, 'id': user.id, 'username': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name}, status.HTTP_200_OK, "success")
         response.set_cookie('jwt', token, httponly=True)
         return response
     
@@ -116,20 +110,26 @@ class UserView(APIView):
     def get(self, request):
         token = request.COOKIES.get('jwt')
         if not token:
-            return Response({
-                "status": status.HTTP_401_UNAUTHORIZED,
-                "message": "Incorrect authentication credentials",
-                }, status=status.HTTP_401_UNAUTHORIZED)
+            return NormalizeResponse(
+            status= status.HTTP_401_UNAUTHORIZED,
+            message= "Usuario no autenticado"
+            )
+
         try:
             payload = jwt.decode(token, 'secret', algorithms=['HS256'])
         except jwt.ExpiredSignatureError:
-            return Response({
-                "status": status.HTTP_401_UNAUTHORIZED,
-                "message": "Incorrect authentication credentials",
-                }, status=status.HTTP_401_UNAUTHORIZED)
+            return NormalizeResponse(
+            status= status.HTTP_401_UNAUTHORIZED,
+            message= "Usuario no autenticado"
+            )
+
         user = User.objects.filter(id=payload['id']).first()
         serializer = UserSerializer(user)
-        return Response(serializer.data)
+        return NormalizeResponse(
+            data=serializer.data,
+            message="Usuario obtenido correctamente",
+            status=status.HTTP_200_OK
+        ) 
     
 class ProfileUpdateView(APIView):
     @swagger_auto_schema(
@@ -143,23 +143,31 @@ class ProfileUpdateView(APIView):
     def patch(self, request):
         token = request.COOKIES.get('jwt')
         if not token:
-            return Response({
-                "status": status.HTTP_401_UNAUTHORIZED,
-                "message": "Incorrect authentication credentials",
-                }, status=status.HTTP_401_UNAUTHORIZED)
+            return NormalizeResponse(
+            status= status.HTTP_401_UNAUTHORIZED,
+            message= "Usuario no autenticado"
+            )
         try:
             payload = jwt.decode(token, 'secret', algorithms=['HS256'])
         except jwt.ExpiredSignatureError:
-            return Response({
-                "status": status.HTTP_401_UNAUTHORIZED,
-                "message": "Incorrect authentication credentials",
-                }, status=status.HTTP_401_UNAUTHORIZED)
+            return NormalizeResponse(
+            status= status.HTTP_401_UNAUTHORIZED,
+            message= "Usuario no autenticado"
+            )
 
         user = User.objects.filter(id=payload['id']).first()
         profile = Profile.objects.get(user=user)
         serializer = UserRecognitionSerializer(profile, data=request.data, partial=True) # partial=True permite la actualización parcial
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+            return NormalizeResponse(
+                data=serializer.data,
+                message="Perfil actualizado correctamente",
+                status=status.HTTP_200_OK
+            )
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return NormalizeResponse(
+                status= status.HTTP_400_BAD_REQUEST,
+                message= "Error en la actualización del perfil"
+
+            )
