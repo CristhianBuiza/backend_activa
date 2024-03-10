@@ -1,0 +1,16 @@
+{
+    "python.analysis.autoImportCompletions": true,
+    "python.autoComplete.extraPaths": ["./venv/lib/python3.11/site-packages"],
+    "python.analysis.indexing": true,
+    "python.analysis.packageIndexDepths": [
+        {
+            "name": "",
+            "depth": 20,
+            "includeAllSymbols": true
+        }
+    ],
+    "python.analysis.extraPaths": [
+        "./venv/lib/python3.11/site-packages"
+    ]
+
+}
