@@ -15,6 +15,7 @@ from app.helpers.normalize_response import NormalizeResponse
 class ReminderView(APIView):
     @swagger_auto_schema(responses={200: ReminderSerializer(many=True)})
     def get(self, request):  
+        day = request.query_params.get('day', None)
         order_date = request.query_params.get('order', None)
         try:
             user = get_user_by_token(request)
@@ -23,6 +24,8 @@ class ReminderView(APIView):
             status= status.HTTP_401_UNAUTHORIZED,
             message= "Usuario no autenticado"
             )
+        if day:
+            reminders = Reminder.objects.filter(user=user, day=day).order_by('hour_start')
         if order_date == 'asc':
             reminders = Reminder.objects.filter(user=user).order_by('day', 'hour_start')
         elif order_date == 'desc':
