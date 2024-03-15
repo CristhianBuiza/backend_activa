@@ -58,6 +58,7 @@ class LoginView(APIView):
                 payload = jwt.decode(token, 'secret', algorithms=['HS256'])
                 user_id = payload['id']
                 user = User.objects.filter(id=user_id).first()
+                profile = Profile.objects.get(user=user)
                 if user:
                     # Devolver datos del usuario si la sesión está activa
                     return NormalizeResponse(
@@ -67,11 +68,10 @@ class LoginView(APIView):
                             'email': user.email,
                             'first_name': user.first_name,
                             'last_name': user.last_name,
-                            
+                            'role': profile.role
                         },
                         message="Usuario autenticado correctamente",
                         status=status.HTTP_200_OK,
-                        
                     )
             except jwt.ExpiredSignatureError:
                 return NormalizeResponse(
@@ -87,6 +87,7 @@ class LoginView(APIView):
         username=request.data.get('username')
         password=request.data.get('password')
         user = User.objects.filter(username=username).first()
+        profile = Profile.objects.get(user=user)
         image_base64=request.data.get('image_base64')
         if user is None:
             return NormalizeResponse(
@@ -123,7 +124,7 @@ class LoginView(APIView):
         }
        
         token = jwt.encode(payload, 'secret', algorithm='HS256')
-        response = NormalizeResponse({'token': token, 'id': user.id, 'username': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name}, status.HTTP_200_OK, "success")
+        response = NormalizeResponse({'token': token, 'id': user.id, 'username': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name, "role": profile.role}, status.HTTP_200_OK, "success")
         response.set_cookie('jwt', token, httponly=True)
         return response
     
@@ -141,7 +142,6 @@ class UserView(APIView):
             status= status.HTTP_401_UNAUTHORIZED,
             message= "Usuario no autenticado"
             )
-
         try:
             payload = jwt.decode(token, 'secret', algorithms=['HS256'])
         except jwt.ExpiredSignatureError:
