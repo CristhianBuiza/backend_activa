@@ -52,11 +52,38 @@ class LoginView(APIView):
     )})
     def post(self, request):
         # Get authentication with cookies
-        if request.COOKIES.get('jwt'):
-            return NormalizeResponse(
-            status= status.HTTP_401_UNAUTHORIZED,
-            message= "Ya ha iniciado sesión"
-            )
+        if 'jwt' in request.COOKIES:
+            try:
+                token = request.COOKIES.get('jwt')
+                payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+                user_id = payload['id']
+                user = User.objects.filter(id=user_id).first()
+                if user:
+                    # Devolver datos del usuario si la sesión está activa
+                    return NormalizeResponse(
+                        data={
+                            'id': user.id,
+                            'username': user.username,
+                            'email': user.email,
+                            'first_name': user.first_name,
+                            'last_name': user.last_name,
+                            
+                        },
+                        message="Usuario autenticado correctamente",
+                        status=status.HTTP_200_OK,
+                        
+                    )
+            except jwt.ExpiredSignatureError:
+                return NormalizeResponse(
+                    status= status.HTTP_401_UNAUTHORIZED,
+                    message= "Usuario no autenticado"
+                )
+            except jwt.InvalidTokenError:
+                return NormalizeResponse(
+                    status= status.HTTP_401_UNAUTHORIZED,
+                    message= "Usuario no autenticado"
+                )
+                
         username=request.data.get('username')
         password=request.data.get('password')
         user = User.objects.filter(username=username).first()
