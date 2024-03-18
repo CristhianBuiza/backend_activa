@@ -32,9 +32,7 @@ class CommunityView(APIView):
             community = Community.objects.filter(tag=tag)
         else:
             community = Community.objects.all()
-            print(community)
         serializer = CommunitySerializer(community, many=True)
-        print(serializer.data)
         if not serializer.data:
             return NormalizeResponse(
                 status=404,

@@ -28,8 +28,10 @@ class RegisterView(APIView):
                 'iat': datetime.datetime.utcnow()
             }
             token = jwt.encode(payload, 'secret', algorithm='HS256')
+            profile = Profile.objects.get(user=user)
             response_data = serializer.data
             response_data['token'] = token
+            response_data['role'] = profile.role 
             response = NormalizeResponse(response_data, status.HTTP_201_CREATED, "Usuario creado correctamente")
             response.set_cookie('jwt', token, httponly=True)
             return response
@@ -106,14 +108,14 @@ class LoginView(APIView):
                 pass
             else:
                 return NormalizeResponse(
-                status= status.HTTP_401_UNAUTHORIZED,
+                status= status.HTTP_400_BAD_REQUEST,
                 message= "Face recognition failed"
                 )
         if user.check_password(password):
             pass
         else:
             return NormalizeResponse(
-            status= status.HTTP_401_UNAUTHORIZED,
+            status= status.HTTP_400_BAD_REQUEST,
             message= "Password invalid"
             )
 

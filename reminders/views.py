@@ -1,4 +1,6 @@
 from django.shortcuts import render
+
+from rest_framework.response import Response
 from .models import Reminder
 from .serializers import ReminderSerializer
 from rest_framework.views import APIView
@@ -33,11 +35,12 @@ class ReminderView(APIView):
         else:
             reminders = Reminder.objects.filter(user=user).order_by('day', 'hour_start')
         serializer = ReminderSerializer(reminders, many=True)
-        return NormalizeResponse (
-            data=serializer.data,
-            message="Reminders obtenidos correctamente",
-            status=status.HTTP_200_OK
-        )
+
+        return Response({
+                "status": status.HTTP_200_OK,
+                "message": "Recordatorios obtenidos correctamente",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
         
     @swagger_auto_schema(request_body=ReminderSerializer, responses={200: ReminderSerializer})
     def post(self, request):

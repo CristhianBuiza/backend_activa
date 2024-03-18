@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 import re
 
 class UserSerializer(serializers.ModelSerializer):
-    role = serializers.ChoiceField(choices=Profile.ROLE_CHOICES, write_only=True, required=False)
+    role = serializers.ChoiceField(choices=Profile.ROLE_CHOICES, write_only=True, required=True)
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'password', 'first_name', 'last_name', 'role')
