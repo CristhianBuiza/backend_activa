@@ -1,5 +1,6 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
 from rest_framework.views import APIView
 from .serializers import CommunitySerializer, TagCommunitySerializer
 from app.helpers.normalize_response import NormalizeResponse
@@ -26,7 +27,7 @@ class CommunityView(APIView):
             tag = TagCommunity.objects.filter(name=tag).first()
             if not tag:
                 return NormalizeResponse(
-                    status=404,
+                    status=status.HTTP_404_NOT_FOUND,
                     message="No se encontró el tag"
                 )
             community = Community.objects.filter(tag=tag)

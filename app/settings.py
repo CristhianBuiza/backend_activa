@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+
+from django.conf.global_settings import APPEND_SLASH
 from dotenv import load_dotenv
 from datetime import timedelta
 
@@ -18,8 +20,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', False)
 
 ALLOWED_HOSTS = ['172.31.35.3','18.118.100.62','127.0.0.1']
-APPEND_SLASH = True 
-
+APPEND_SLASH=True
 
 # Application definition
 

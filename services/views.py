@@ -1,8 +1,10 @@
+from app.helpers.get_user_by_token import get_user_by_token
 from drf_yasg import openapi
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.views import APIView
 from app.helpers.normalize_response import NormalizeResponse
-from .models import Service, TagService
-from .serializers import ServiceSerializer, TagSerializer
+from .models import Service, TagService, TaxiService
+from .serializers import ServiceSerializer, TagSerializer, TaxiServiceDetailSerializer, TaxiServiceSerializer
 from drf_yasg.utils import swagger_auto_schema
 
 
@@ -79,3 +81,51 @@ class TagView(APIView):
             data=serializer.data,
             message="Tags obtenidos correctamente"
         )
+        
+class TaxiServiceView(APIView):
+    @swagger_auto_schema(
+        operation_description="Obtiene una lista de todos los servicios de taxi por usuario",
+        responses={200: ServiceSerializer(many=True), 404: 'No se encontraron servicios de taxi'}
+    )
+    def get(self, request):
+        try:
+            user = get_user_by_token(request)
+        except AuthenticationFailed:
+            return NormalizeResponse(
+                status=401,
+                message="Usuario no autenticado"
+            )
+        taxis = TaxiService.objects.filter(user=user)
+        serializer = TaxiServiceSerializer(taxis, many=True)
+        if not serializer.data:
+            return NormalizeResponse(
+                status=404,
+                message="No se encontraron servicios de taxi"
+            )
+        return NormalizeResponse(
+            data=serializer.data,
+            message="Servicio de taxi obtenido correctamente"
+        )
+
+class TaxiServiceDetailView(APIView):
+    def get(self, request, pk):
+        try:
+            user = get_user_by_token(request)
+        except AuthenticationFailed:
+            return NormalizeResponse(
+                status=401,
+                message="Usuario no autenticado"
+            )
+        taxis = TaxiService.objects.filter(user=user, pk=pk).first()
+        serializer = TaxiServiceDetailSerializer(taxis)
+        if not serializer.data:
+            return NormalizeResponse(
+                status=404,
+                message="No se encontraron servicios de taxi"
+            )
+        return NormalizeResponse(
+            data=serializer.data,
+            message="Servicios de taxi obtenidos correctamente"
+        )
+
+    

@@ -10,5 +10,6 @@ class Profile(models.Model):
     photo = models.ImageField(upload_to='photos', null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
     role = models.CharField(max_length=100, choices=ROLE_CHOICES, null=True, blank=True, default='P.A.M') 
+    
     def __str__(self):
         return self.user.username

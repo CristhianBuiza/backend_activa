@@ -15,26 +15,32 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True, 'required': True}}
 
     def validate_username(self, value):
+        value_lower = value.lower()  # Convertir a minúsculas
         if len(value) < 4:
             raise serializers.ValidationError("El nombre de usuario debe tener al menos 4 caracteres.")
-        if User.objects.filter(username=value).exists():
+        if User.objects.filter(username__iexact=value_lower).exists():  # Usar iexact para ignorar mayúsculas/minúsculas
             raise serializers.ValidationError("Un usuario con este nombre de usuario ya existe.")
-        return value
+        return value_lower  # Devolver el valor en minúsculas
     
     def validate_first_name(self, value):
+        if len(value) < 4:
+            raise serializers.ValidationError("El nombre de usuario debe tener al menos 4 caracteres.")
         if not re.match("^[A-Za-z]+(?:[ '-][A-Za-z]+)*$", value) or len(value) < 2:
             raise serializers.ValidationError("El nombre debe contener solo letras y tener más de un carácter.")
         return value
     
     def validate_last_name(self, value):
+        if len(value) < 4:
+            raise serializers.ValidationError("El nombre de usuario debe tener al menos 4 caracteres.")
         if not re.match("^[A-Za-z]+(?:[ '-][A-Za-z]+)*$", value) or len(value) < 2:
             raise serializers.ValidationError("El apellido debe contener solo letras y tener más de un carácter.")
         return value
     
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
+        value_lower = value.lower()  
+        if User.objects.filter(email__iexact=value_lower).exists():  # Usar iexact para ignorar mayúsculas/minúsculas
             raise serializers.ValidationError("Un usuario con este email ya existe.")
-        return value
+        return value_lower  
 
     def valid_username(self, value):
         if User.objects.filter(username=value).exists():
