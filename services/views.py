@@ -3,7 +3,7 @@ from drf_yasg import openapi
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.views import APIView
 from app.helpers.normalize_response import NormalizeResponse
-from .models import Service, TagService, TaxiService
+from .models import AttentionTaxiService, Service, TagService, TaxiService
 from .serializers import ServiceSerializer, TagSerializer, TaxiServiceDetailSerializer, TaxiServiceSerializer
 from drf_yasg.utils import swagger_auto_schema
 
@@ -108,6 +108,10 @@ class TaxiServiceView(APIView):
         )
 
 class TaxiServiceDetailView(APIView):
+    @swagger_auto_schema(
+        operation_description="Obtiene un servicio de taxi específico por su ID",
+        responses={200: ServiceSerializer(), 404: 'No se encontró el servicio de taxi'}
+    )
     def get(self, request, pk):
         try:
             user = get_user_by_token(request)
@@ -128,4 +132,32 @@ class TaxiServiceDetailView(APIView):
             message="Servicios de taxi obtenidos correctamente"
         )
 
-    
+class TaxiReservation(APIView):
+    @swagger_auto_schema(
+        operation_description="Reserva un servicio de taxi",
+        responses={200: 'Reserva realizada correctamente', 404: 'No se encontró el servicio de taxi'}
+    )
+    def post(self, request, pk):
+        try:
+            user = get_user_by_token(request)
+        except AuthenticationFailed:
+            return NormalizeResponse(
+                status=401,
+                message="Usuario no autenticado"
+            )
+        taxi = TaxiService.objects.filter(pk=pk).first()
+        if not taxi:
+            return NormalizeResponse(
+                status=404,
+                message="No se encontró el servicio de taxi"
+            )
+        if taxi.user == user:
+            return NormalizeResponse(
+                status=400,
+                message="No puedes reservar tu propio servicio"
+            )
+        taxi_reservation = AttentionTaxiService.objects.create(user=user, taxi_service=taxi)
+        return NormalizeResponse(
+            data=taxi_reservation.id,
+            message="Reserva realizada correctamente"
+        )

@@ -34,6 +34,11 @@ class TaxiService(models.Model):
     icon = models.ForeignKey(ServiceIcon, on_delete=models.SET_NULL, null=True, blank=True)
     date=models.DateTimeField(auto_now_add=True)
     
+class AttentionTaxiService(models.Model):
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    taxi_service = models.ForeignKey(TaxiService, on_delete=models.CASCADE)
+    date = models.DateTimeField(auto_now_add=True)
+    
 # class RestaurantBrandService(models.Model):
 #     title = models.CharField(max_length=100)
 #     icon = models.ForeignKey(ServiceIcon, on_delete=models.SET_NULL, null=True, blank=True)
