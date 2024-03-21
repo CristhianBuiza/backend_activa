@@ -36,6 +36,7 @@ LOCAL_APPS = [
     'health',
     'logs',
     'profiles',
+    'help'
 ]
 
 DJANGO_APPS = [

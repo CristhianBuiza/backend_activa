@@ -1,4 +1,5 @@
 from app.helpers.get_user_by_token import get_user_by_token
+from drf_yasg.utils import swagger_auto_schema
 from help.serializer import HelpSerializer
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
@@ -8,6 +9,7 @@ from app.helpers.normalize_response import NormalizeResponse
 
 # Create your views here.
 class HelpView(APIView):
+    @swagger_auto_schema(request_body=HelpSerializer, responses={200: HelpSerializer})
     def post(self, request):
         scream = request.data.get('scream')
         try:
