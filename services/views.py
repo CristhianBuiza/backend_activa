@@ -1,10 +1,11 @@
 from app.helpers.get_user_by_token import get_user_by_token
 from drf_yasg import openapi
+from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.views import APIView
 from app.helpers.normalize_response import NormalizeResponse
-from .models import AttentionTaxiService, Service, TagService, TaxiService
-from .serializers import ServiceSerializer, TagSerializer, TaxiServiceDetailSerializer, TaxiServiceSerializer
+from .models import AttentionTaxiService, PayServices, Service, TagService, TaxiService
+from .serializers import ServiceSerializer, TagSerializer, TaxiServiceDetailSerializer, TaxiServiceSerializer, PayServicesSerializer
 from drf_yasg.utils import swagger_auto_schema
 
 
@@ -131,8 +132,6 @@ class TaxiServiceDetailView(APIView):
             data=serializer.data,
             message="Servicios de taxi obtenidos correctamente"
         )
-
-class TaxiReservation(APIView):
     @swagger_auto_schema(
         operation_description="Reserva un servicio de taxi",
         responses={200: 'Reserva realizada correctamente', 404: 'No se encontró el servicio de taxi'}
@@ -160,4 +159,21 @@ class TaxiReservation(APIView):
         return NormalizeResponse(
             data=taxi_reservation.id,
             message="Reserva realizada correctamente"
+        )
+class PayServicesView(APIView):
+    @swagger_auto_schema(
+        operation_description="Obtiene una lista de todos los servicios de pago",
+        responses={200: PayServicesSerializer(many=True), 404: 'No se encontraron servicios de pago'}
+    )
+    def get(self, request):
+        services = PayServices.objects.all()
+        serializer = PayServicesSerializer(services, many=True)
+        if not serializer.data:
+            return NormalizeResponse(
+                status=status.HTTP_404_NOT_FOUND,
+                message="No se encontraron servicios de pago"
+            )
+        return NormalizeResponse(
+            data=serializer.data,
+            message="Servicios de pago obtenidos correctamente"
         )

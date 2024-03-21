@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Service, TagService, TaxiService
+from .models import PayServices, Service, TagService, TaxiService
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,4 +19,9 @@ class TaxiServiceSerializer(serializers.ModelSerializer):
 class TaxiServiceDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaxiService
+        fields = '__all__'
+
+class PayServicesSerializer(serializers.Serializer):
+    class Meta:
+        model = PayServices
         fields = '__all__'

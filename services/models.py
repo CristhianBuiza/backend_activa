@@ -56,4 +56,11 @@ class AttentionTaxiService(models.Model):
     
 #     def __str__(self):
 #         return self.title
+
+class PayServices(models):
+    service = models.CharField(max_length=120)
+    date = models.DateTimeField(auto_now_add=True)
+    photo=models.ImageField(upload_to='payservices')
     
+    def __str__(self):
+        return self.service
