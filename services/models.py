@@ -57,7 +57,7 @@ class AttentionTaxiService(models.Model):
 #     def __str__(self):
 #         return self.title
 
-class PayServices(models):
+class PayServices(models.Model):
     service = models.CharField(max_length=120)
     date = models.DateTimeField(auto_now_add=True)
     photo=models.ImageField(upload_to='payservices')
