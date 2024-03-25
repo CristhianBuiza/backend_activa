@@ -178,4 +178,3 @@ class ReminderDetailView(APIView):
             status= status.HTTP_204_NO_CONTENT,
             message= "Recordatorio con el id `{}` ha sido eliminado".format(pk)
             )
-       

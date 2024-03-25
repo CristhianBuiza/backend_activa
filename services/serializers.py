@@ -21,7 +21,7 @@ class TaxiServiceDetailSerializer(serializers.ModelSerializer):
         model = TaxiService
         fields = '__all__'
 
-class PayServicesSerializer(serializers.Serializer):
+class PayServicesSerializer(serializers.ModelSerializer):
     class Meta:
         model = PayServices
         fields = '__all__'

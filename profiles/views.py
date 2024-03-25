@@ -1,3 +1,4 @@
+from app.helpers.get_user_by_token import get_user_by_token
 import jwt, datetime
 import base64
 from app.utils import classify_face
@@ -5,7 +6,7 @@ from app.utils import classify_face
 from django.core.files.base import ContentFile 
 from .models import Profile
 from logs.models import Log
-from .serializers import UserSerializer,UserRecognitionSerializer
+from .serializers import ProfileSerializer, UserSerializer,UserRecognitionSerializer
 from rest_framework.views import APIView
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from django.contrib.auth.models import User
@@ -200,3 +201,29 @@ class ProfileUpdateView(APIView):
                 message= "Error en la actualización del perfil"
 
             )
+class PAMEntornoView(APIView):
+    def get(self, request):
+        try:
+            user = get_user_by_token(request)
+        except AuthenticationFailed:
+            return NormalizeResponse(
+            status= status.HTTP_401_UNAUTHORIZED,
+            message= "Usuario no autenticado"
+            )
+        profile = Profile.objects.filter(user=user)
+        if profile.role == 'P.A.M':
+            entornos = profile.entornos.all()
+            serializer = ProfileSerializer(entornos, many=True)
+        elif profile.role == 'Entorno':
+            pams = profile.pams.all()
+            serializer = ProfileSerializer(pams, many=True)
+        else:
+            return NormalizeResponse(
+            status= status.HTTP_404_NOT_FOUND,
+            message= "Rol de usuario no reconocido"
+            )
+        return NormalizeResponse(
+            data=serializer.data,
+            message="Usuarios obtenidos correctamente",
+            status=status.HTTP_200_OK
+        )
