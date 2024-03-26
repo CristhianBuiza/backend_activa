@@ -22,7 +22,8 @@ media
 
 # C extensions
 *.so
-
+managed_context/
+test_suite_analysis/
 # Distribution / packaging
 .Python
 build/

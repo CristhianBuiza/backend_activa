@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+
+from django.conf.global_settings import APPEND_SLASH
 from dotenv import load_dotenv
 from datetime import timedelta
 
@@ -17,15 +19,16 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', False)
 
-ALLOWED_HOSTS = ['172.31.35.3','18.118.100.62']
-
-
+ALLOWED_HOSTS = ['172.31.35.3','18.118.100.62','127.0.0.1']
+APPEND_SLASH=True
 
 # Application definition
 
 THIRD_PARTY_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
+    'dal',
+    'dal_select2',
 ]
 
 LOCAL_APPS = [
@@ -35,6 +38,7 @@ LOCAL_APPS = [
     'health',
     'logs',
     'profiles',
+    'help'
 ]
 
 DJANGO_APPS = [
@@ -149,7 +153,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'

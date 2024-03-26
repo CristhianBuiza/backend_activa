@@ -8,6 +8,8 @@ from logs.models import Log
 from django.core.files.base import ContentFile 
 from django.contrib.auth.models import User
 from profiles.models import Profile
+from dal import autocomplete
+from django.contrib.auth.models import User
 
 def login_view(request):
     return render(request, 'login.html', {})
@@ -43,3 +45,19 @@ def find_user_view(request):
         else:
             return JsonResponse({'success': False, 'message': 'No photo provided'})
     return JsonResponse({'success': False, 'message': 'User not found!'})
+
+
+
+class UserAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        # No olvides manejar tus permisos y seguridades aquí.
+        qs = User.objects.all()
+
+        if self.q:
+            qs = qs.filter(username__istartswith=self.q)
+
+        return qs
+    
+    def get_result_label(self, item):
+        # Cambiar la representación del resultado para mostrar el nombre y apellido.
+        return f"{item.first_name} {item.last_name} ({item.username})"
