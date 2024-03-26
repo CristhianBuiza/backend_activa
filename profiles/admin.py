@@ -25,5 +25,3 @@ class ProfileAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name', 'role')
     list_filter = ('role',)
     list_per_page = 10
-
-
