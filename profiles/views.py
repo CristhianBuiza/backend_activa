@@ -25,14 +25,17 @@ class RegisterView(APIView):
             user = User.objects.get(username=user_data['username'])
             payload = {
                 "id": user.id,
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
-                'iat': datetime.datetime.utcnow()
+                'exp': datetime.datetime.now() + datetime.timedelta(minutes=60),
+                'iat': datetime.datetime.now()
             }
             token = jwt.encode(payload, 'secret', algorithm='HS256')
             profile = Profile.objects.get(user=user)
             response_data = serializer.data
-            response_data['token'] = token
             response_data['role'] = profile.role 
+            response_data['token'] = token
+            response_data['affiliations'] = profile.affiliations.all()
+            response_data['cellphone'] = profile.cellphone
+            response_data['additionalCellphone'] = profile.additionalCellphone
             response = NormalizeResponse(response_data, status.HTTP_201_CREATED, "Usuario creado correctamente")
             response.set_cookie('jwt', token, httponly=True)
             return response
@@ -54,16 +57,16 @@ class LoginView(APIView):
         }
     )})
     def post(self, request):
-        # Get authentication with cookies
         if 'jwt' in request.COOKIES:
             try:
                 token = request.COOKIES.get('jwt')
                 payload = jwt.decode(token, 'secret', algorithms=['HS256'])
                 user_id = payload['id']
                 user = User.objects.filter(id=user_id).first()
-                profile = Profile.objects.get(user=user)
-                if user:
-                    # Devolver datos del usuario si la sesión está activa
+                if user is not None:
+                    profile = Profile.objects.get(user=user)
+                    affiliations = profile.affiliations.all()
+                    affiliations_list = [affiliation for affiliation in affiliations]
                     return NormalizeResponse(
                         data={
                             'id': user.id,
@@ -71,16 +74,21 @@ class LoginView(APIView):
                             'email': user.email,
                             'first_name': user.first_name,
                             'last_name': user.last_name,
-                            'role': profile.role
+                            'role': profile.role,
+                            'affiliations': affiliations_list,
+                            'cellphone': profile.cellphone,
+                            'additionalCellphone': profile.additionalCellphone
                         },
                         message="Usuario autenticado correctamente",
                         status=status.HTTP_200_OK,
                     )
             except jwt.ExpiredSignatureError:
-                return NormalizeResponse(
+                response = NormalizeResponse(
                     status= status.HTTP_401_UNAUTHORIZED,
-                    message= "Usuario no autenticado"
+                    message= "Usuario no autenticado, token expirado"
                 )
+                response.delete_cookie('jwt')  # Aquí borras el cookie
+                return response
             except jwt.InvalidTokenError:
                 return NormalizeResponse(
                     status= status.HTTP_401_UNAUTHORIZED,
@@ -122,8 +130,8 @@ class LoginView(APIView):
 
         payload = {
             "id":user.id,
-            'exp':datetime.datetime.utcnow()+datetime.timedelta(minutes=60),
-            'iat': datetime.datetime.utcnow()
+            'exp':datetime.datetime.now()+datetime.timedelta(minutes=60),
+            'iat': datetime.datetime.now()
         }
        
         token = jwt.encode(payload, 'secret', algorithm='HS256')
@@ -131,6 +139,45 @@ class LoginView(APIView):
         response.set_cookie('jwt', token, httponly=True)
         return response
     
+class UpdateView(APIView):
+    @swagger_auto_schema(
+        request_body=UserRecognitionSerializer(partial=True),  # Indicate that partial updates are allowed
+        responses={
+            200: UserRecognitionSerializer,  # Successful response with the updated profile data
+            400: 'Bad Request - Invalid Data',  # Data validation error
+            401: 'Unauthenticated - Invalid or expired JWT token'  # Authentication failure
+        }
+    )
+    def patch(self, request):
+        token = request.COOKIES.get('jwt')
+        if not token:
+            return NormalizeResponse(
+            status= status.HTTP_401_UNAUTHORIZED,
+            message= "Usuario no autenticado"
+            )
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            return NormalizeResponse(
+            status= status.HTTP_401_UNAUTHORIZED,
+            message= "Usuario no autenticado"
+            )
+
+        user = User.objects.filter(id=payload['id']).first()
+        serializer = UserSerializer(user, data=request.data, partial=True) # partial=True permite la actualización parcial
+        if serializer.is_valid():
+            serializer.save()
+            return NormalizeResponse(
+                data=serializer.data,
+                message="Perfil actualizado correctamente",
+                status=status.HTTP_200_OK
+            )
+        else:
+            return NormalizeResponse(
+                status= status.HTTP_400_BAD_REQUEST,
+                message= "Error en la actualización del perfil"
+
+            )
 class UserView(APIView):
     @swagger_auto_schema(
         responses={
@@ -201,7 +248,7 @@ class ProfileUpdateView(APIView):
                 message= "Error en la actualización del perfil"
 
             )
-class PAMEntornoView(APIView):
+class RelationView(APIView):
     def get(self, request):
         try:
             user = get_user_by_token(request)
@@ -212,11 +259,11 @@ class PAMEntornoView(APIView):
             )
         profile = Profile.objects.filter(user=user)
         if profile.role == 'P.A.M':
-            entornos = profile.entornos.all()
-            serializer = ProfileSerializer(entornos, many=True)
+            affiliations = profile.affiliations.all()
+            serializer = ProfileSerializer(affiliations, many=True)
         elif profile.role == 'Entorno':
-            pams = profile.pams.all()
-            serializer = ProfileSerializer(pams, many=True)
+            affiliations = profile.affiliations.all()
+            serializer = ProfileSerializer(affiliations, many=True)
         else:
             return NormalizeResponse(
             status= status.HTTP_404_NOT_FOUND,

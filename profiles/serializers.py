@@ -9,11 +9,16 @@ import re
 
 class UserSerializer(serializers.ModelSerializer):
     role = serializers.ChoiceField(choices=Profile.ROLE_CHOICES, write_only=True, required=True)
+    affiliations = serializers.PrimaryKeyRelatedField(many=True, queryset=Profile.objects.all(), required=False)
+    cellphone = serializers.CharField(write_only=True, required=False)
+    additionalCellphone = serializers.CharField(write_only=True, required=False)
+    
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'password', 'first_name', 'last_name', 'role')
-        extra_kwargs = {'password': {'write_only': True, 'required': True}}
-
+        fields = ('id', 'username', 'email', 'password', 'first_name', 'last_name', 'role', 'affiliations', 'cellphone', 'additionalCellphone')
+        extra_kwargs = {
+            'password': {'write_only': True},
+        }
     def validate_username(self, value):
         value_lower = value.lower()  # Convertir a minúsculas
         if len(value) < 4:
@@ -23,10 +28,11 @@ class UserSerializer(serializers.ModelSerializer):
         return value_lower  # Devolver el valor en minúsculas
     
     def validate_first_name(self, value):
-        if len(value) < 4:
-            raise serializers.ValidationError("El nombre de usuario debe tener al menos 4 caracteres.")
-        if not re.match("^[A-Za-z]+(?:[ '-][A-Za-z]+)*$", value) or len(value) < 2:
-            raise serializers.ValidationError("El nombre debe contener solo letras y tener más de un carácter.")
+    # Ajustar la longitud mínima si es necesario
+        if len(value) < 2:  # Ajustado a 2 caracteres como mínimo
+            raise serializers.ValidationError("El nombre debe tener al menos 2 caracteres.")
+        if not re.match("^[A-Za-z]+(?:[ '-][A-Za-z]+)*$", value):
+            raise serializers.ValidationError("El nombre debe contener solo letras y caracteres válidos como espacios o guiones.")
         return value
     
     def validate_last_name(self, value):
@@ -46,9 +52,22 @@ class UserSerializer(serializers.ModelSerializer):
         if User.objects.filter(username=value).exists():
             raise serializers.ValidationError("Un usuario con este nombre de usuario ya existe.")
         return value
+    
+    def valid_cellphone(self, value):
+        if len(value) < 5:
+            raise serializers.ValidationError("El número de teléfono debe tener al menos 5 caracteres.")
+        return value
+    
+    def valid_additionalCellphone(self, value):
+        if len(value) < 5:
+            raise serializers.ValidationError("El número de teléfono debe tener al menos 5 caracteres.")
+        return value 
 
     def create(self, validated_data):
         role = validated_data.pop('role', None)
+        affiliations = validated_data.pop('affiliations', [])
+        cellphone = validated_data.pop('cellphone', None)
+        additionalCellphone = validated_data.pop('additionalCellphone', None)
         user = None
         try:
             with transaction.atomic():
@@ -60,9 +79,16 @@ class UserSerializer(serializers.ModelSerializer):
                 if not created:
                     # Optionally update the profile's role if it already exists
                     profile.role = role
+                    profile.affiliations.set(affiliations)
+                    profile.cellphone = cellphone
+                    profile.additionalCellphone = additionalCellphone
                     profile.save()
                 else:
                     profile.role = role
+                    profile.role = role
+                    profile.affiliations.set(affiliations)
+                    profile.cellphone = cellphone
+                    profile.additionalCellphone = additionalCellphone
                     profile.save()
         except IntegrityError as e:
             # Handle the unique constraint violation
@@ -70,8 +96,8 @@ class UserSerializer(serializers.ModelSerializer):
             # Optionally, you could raise a custom validation error to be handled by the API response
             raise serializers.ValidationError("A profile for this user already exists.")
 
-        return {'id': user.id, 'username': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name, 'role': role}
-        
+        return {'id': user.id, 'username': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name, 'role': role, 'affiliations': affiliations, 'cellphone': cellphone, 'additionalCellphone': additionalCellphone}
+
 class UserRecognitionSerializer(serializers.ModelSerializer):
     photo_base64 = serializers.CharField(write_only=True, allow_blank=True, required=False)
 
