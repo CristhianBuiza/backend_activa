@@ -1,3 +1,4 @@
+from django.forms import model_to_dict
 from app.helpers.get_user_by_token import get_user_by_token
 import jwt, datetime
 import base64
@@ -64,7 +65,8 @@ class LoginView(APIView):
                 if user is not None:
                     profile = Profile.objects.get(user=user)
                     affiliations = profile.affiliations.all()
-                    affiliations_list = [affiliation for affiliation in affiliations]
+                    affiliations_list = [{'id': affiliation.id, 'username': affiliation.user.username} for affiliation in affiliations]
+                    print(affiliations_list)    
                     return NormalizeResponse(
                         data={
                             'id': user.id,
