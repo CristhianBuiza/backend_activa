@@ -9,6 +9,7 @@ from logs.models import Log
 from .serializers import ProfileSerializer, UserSerializer,UserRecognitionSerializer
 from rest_framework.views import APIView
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
@@ -23,25 +24,22 @@ class RegisterView(APIView):
         if serializer.is_valid():
             user_data = serializer.save()
             user = User.objects.get(username=user_data['username'])
-            payload = {
-                "id": user.id,
-                'exp': datetime.datetime.now() + datetime.timedelta(minutes=60),
-                'iat': datetime.datetime.now()
-            }
-            token = jwt.encode(payload, 'secret', algorithm='HS256')
+            refresh = RefreshToken.for_user(user)
             profile = Profile.objects.get(user=user)
             response_data = serializer.data
-            response_data['role'] = profile.role 
-            response_data['token'] = token
-            response_data['affiliations'] = profile.affiliations.all()
-            response_data['cellphone'] = profile.cellphone
-            response_data['additionalCellphone'] = profile.additionalCellphone
+            response_data.update({
+                'role': profile.role,
+                'token': str(refresh.access_token),
+                'affiliations': profile.affiliations.all(),
+                'cellphone': profile.cellphone,
+                'additionalCellphone': profile.additionalCellphone
+            })
             response = NormalizeResponse(response_data, status.HTTP_201_CREATED, "Usuario creado correctamente")
-            response.set_cookie('jwt', token, httponly=True)
+            response.set_cookie('jwt', str(refresh), httponly=True)
             return response
         else:
             return NormalizeResponse(serializer.errors, status.HTTP_401_UNAUTHORIZED, "Error en el registro")
-
+        
 class LoginView(APIView):
     @swagger_auto_schema(request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
@@ -207,7 +205,6 @@ class UserView(APIView):
             message="Usuario obtenido correctamente",
             status=status.HTTP_200_OK
         ) 
-    
 class ProfileUpdateView(APIView):
     @swagger_auto_schema(
         request_body=UserRecognitionSerializer(partial=True),  # Indicate that partial updates are allowed
