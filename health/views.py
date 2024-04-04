@@ -18,7 +18,10 @@ class HealthView(APIView):
     @swagger_auto_schema(responses={200: HealthSerializer(many=True)})
     def get(self, request):  
         day = request.query_params.get('day', None)
+        month= request.query_params.get('month', None)
         user = request.user
+        if month:
+            reminders = Health.objects.filter(user=user, day__month=month)
         if day:
             reminders = Health.objects.filter(user=user, day=day)
         else:
