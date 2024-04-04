@@ -12,8 +12,9 @@ class HelpView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     @swagger_auto_schema(request_body=HelpSerializer, responses={200: HelpSerializer})
     def post(self, request):
+        user = request.user
         screen = request.data.get('screen')
-        
+        print(user)
         if not screen:
             return NormalizeResponse(
                 status=status.HTTP_400_BAD_REQUEST,
@@ -21,6 +22,7 @@ class HelpView(APIView):
             )
         help = Help.objects.create(
             screen=screen,
+            user=user
         )
         serializer = HelpSerializer(help)
         return NormalizeResponse(

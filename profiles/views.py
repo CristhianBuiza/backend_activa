@@ -3,7 +3,7 @@ from app.helpers.get_user_by_token import get_user_by_token
 import jwt, datetime
 import base64
 from app.utils import classify_face
-
+from django.utils import timezone
 from django.core.files.base import ContentFile 
 from .models import Profile
 from logs.models import Log
@@ -89,15 +89,11 @@ class LoginView(APIView):
             message= "Password invalid"
             )
 
-        payload = {
-            "id":user.id,
-            'exp':datetime.datetime.now()+datetime.timedelta(minutes=60),
-            'iat': datetime.datetime.now()
-        }
+        refresh = RefreshToken.for_user(user)
+        access_token = refresh.access_token
        
-        token = jwt.encode(payload, 'secret', algorithm='HS256')
-        response = NormalizeResponse({'token': token, 'id': user.id, 'username': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name, "role": profile.role}, status.HTTP_200_OK, "success")
-        response.set_cookie('jwt', token, httponly=True)
+        response = NormalizeResponse({'token': str(access_token), 'id': user.id, 'username': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name, "role": profile.role}, status.HTTP_200_OK, "success")
+        response.set_cookie('jwt', str(access_token), httponly=True)
         return response
     
 class UpdateView(APIView):
