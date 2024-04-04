@@ -56,45 +56,6 @@ class LoginView(APIView):
         }
     )})
     def post(self, request):
-        if 'jwt' in request.COOKIES:
-            try:
-                token = request.COOKIES.get('jwt')
-                payload = jwt.decode(token, 'secret', algorithms=['HS256'])
-                user_id = payload['id']
-                user = User.objects.filter(id=user_id).first()
-                if user is not None:
-                    profile = Profile.objects.get(user=user)
-                    affiliations = profile.affiliations.all()
-                    affiliations_list = [{'id': affiliation.id, 'username': affiliation.user.username} for affiliation in affiliations]
-                    print(affiliations_list)    
-                    return NormalizeResponse(
-                        data={
-                            'id': user.id,
-                            'username': user.username,
-                            'email': user.email,
-                            'first_name': user.first_name,
-                            'last_name': user.last_name,
-                            'role': profile.role,
-                            'affiliations': affiliations_list,
-                            'cellphone': profile.cellphone,
-                            'additionalCellphone': profile.additionalCellphone
-                        },
-                        message="Usuario autenticado correctamente",
-                        status=status.HTTP_200_OK,
-                    )
-            except jwt.ExpiredSignatureError:
-                response = NormalizeResponse(
-                    status= status.HTTP_401_UNAUTHORIZED,
-                    message= "Usuario no autenticado, token expirado"
-                )
-                response.delete_cookie('jwt')  # Aquí borras el cookie
-                return response
-            except jwt.InvalidTokenError:
-                return NormalizeResponse(
-                    status= status.HTTP_401_UNAUTHORIZED,
-                    message= "Usuario no autenticado"
-                )
-                
         username=request.data.get('username')
         password=request.data.get('password')
         user = User.objects.filter(username=username).first()
