@@ -7,23 +7,21 @@ from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth.models import User
 from app.helpers.get_user_by_token import get_user_by_token
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status
+from rest_framework import permissions, status
 from app.helpers.normalize_response import NormalizeResponse
 from rest_framework.parsers import MultiPartParser, FormParser
 # Create your views here.
 
 class HealthView(APIView):
+    authentication_classes = [ permissions.IsAuthenticated ]
     parser_classes = (MultiPartParser, FormParser,)
     @swagger_auto_schema(responses={200: HealthSerializer(many=True)})
     def get(self, request):  
         day = request.query_params.get('day', None)
-        try:
-            user = get_user_by_token(request)
-        except AuthenticationFailed as e:
-            return NormalizeResponse(
-            status= status.HTTP_401_UNAUTHORIZED,
-            message= "Usuario no autenticado"
-            )
+        month= request.query_params.get('month', None)
+        user = request.user
+        if month:
+            reminders = Health.objects.filter(user=user, day__month=month)
         if day:
             reminders = Health.objects.filter(user=user, day=day)
         else:
@@ -38,13 +36,7 @@ class HealthView(APIView):
     @swagger_auto_schema(request_body=HealthSerializer, responses={200: HealthSerializer})
     def post(self, request):
         # create a new reminder
-        try:
-            user = get_user_by_token(request)
-        except AuthenticationFailed:
-            return NormalizeResponse(
-            status= status.HTTP_401_UNAUTHORIZED,
-            message= "Usuario no autenticado"
-            )
+        user = request.user
         data = request.data
         data['user'] = user.id
         serializer = HealthSerializer(data=data)
@@ -61,13 +53,7 @@ class HealthView(APIView):
     @swagger_auto_schema(request_body=HealthSerializer(partial=True), responses={200: HealthSerializer})
     def put(self, request, pk):
         # Update a reminder
-        try:
-            user = get_user_by_token(request)
-        except AuthenticationFailed:
-            return NormalizeResponse(
-            status= status.HTTP_401_UNAUTHORIZED,
-            message= "Usuario no autenticado"
-            )
+        user = request.user
         data = request.data
         reminder = get_object_or_404(Health.objects.all(), pk=pk)
         if reminder.user != user:
@@ -96,14 +82,9 @@ class HealthView(APIView):
             )
 
 class HealthDetailView(APIView):
+    authentication_classes = [ permissions.IsAuthenticated ]
     def get(self, request, pk):
-        try :
-            user = get_user_by_token(request)
-        except AuthenticationFailed:
-            return NormalizeResponse(
-            status= status.HTTP_401_UNAUTHORIZED,
-            message= "Usuario no autenticado"
-            )
+        user = request.user
         my_reminder = Health.objects.filter(user=user, id=pk)
         try:
             reminder = get_object_or_404(my_reminder, pk=pk)
@@ -121,13 +102,7 @@ class HealthDetailView(APIView):
         
     def put(self, request, pk):
         # Update a reminder
-        try:
-            user = get_user_by_token(request)
-        except AuthenticationFailed:
-            return NormalizeResponse(
-            status= status.HTTP_401_UNAUTHORIZED,
-            message= "Usuario no autenticado"
-            )
+        user = request.user
         my_reminder = Health.objects.filter(user=user, id=pk)
         try:
             reminder = get_object_or_404(my_reminder, pk=pk)
@@ -150,13 +125,7 @@ class HealthDetailView(APIView):
 
     def delete(self, request, pk):
         # Get object with this pk
-        try:
-            user = get_user_by_token(request)
-        except AuthenticationFailed:
-            return NormalizeResponse(
-            status= status.HTTP_401_UNAUTHORIZED,
-            message= "Usuario no autenticado"
-            )
+        user = request.user
         my_reminder = Health.objects.filter(user=user, id=pk)
         try:
             reminder = get_object_or_404(my_reminder, pk=pk)

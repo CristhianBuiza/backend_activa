@@ -1,7 +1,7 @@
 from app.helpers.get_user_by_token import get_user_by_token
 from drf_yasg.utils import swagger_auto_schema
 from help.serializer import HelpSerializer
-from rest_framework import status
+from rest_framework import permissions, status
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.views import APIView
 from .models import Help
@@ -9,23 +9,19 @@ from app.helpers.normalize_response import NormalizeResponse
 
 # Create your views here.
 class HelpView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
     @swagger_auto_schema(request_body=HelpSerializer, responses={200: HelpSerializer})
     def post(self, request):
-        scream = request.data.get('scream')
-        try:
-            user = get_user_by_token(request)
-        except AuthenticationFailed :
-            return NormalizeResponse(
-            status= status.HTTP_400_BAD_REQUEST,
-            message= "Usuario no autenticado"
-            )
-        if not scream:
+        user = request.user
+        screen = request.data.get('screen')
+        print(user)
+        if not screen:
             return NormalizeResponse(
                 status=status.HTTP_400_BAD_REQUEST,
-                message="El campo scream es requerido"
+                message="El campo screen es requerido"
             )
         help = Help.objects.create(
-            scream=scream,
+            screen=screen,
             user=user
         )
         serializer = HelpSerializer(help)

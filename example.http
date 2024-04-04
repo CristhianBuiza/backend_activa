@@ -1,0 +1,26 @@
+# # url http://127.0.0.1:8000/api/help/
+#  body {
+#     "username":"chubbb",
+#     "password":"juan1000"
+# }
+# AUTH {Authorization bearer token}
+
+
+POST http://127.0.0.1:8000/api/login/
+Content-Type: application/json
+
+{
+    "username":"cdocc",
+    "password":"juan1000"
+}
+###
+POST http://127.0.0.1:8000/api/help/
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzEyMjAzNjc2LCJpYXQiOjE3MTIyMDMwNzYsImp0aSI6ImU1YmMxOTNlNzFjYzQ0M2JiNzY1NWEyZTdjYjg0ZmEwIiwidXNlcl9pZCI6MTd9.OYK1EQbd9KiO4qycV3--2cEo7_XQC1BdTbWS0Fokkcg
+
+{
+    "screen":"Taxi",
+    "details":"Menu"
+}
+
+
