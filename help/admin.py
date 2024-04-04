@@ -16,4 +16,3 @@ class RequestAttentionAdmin(admin.ModelAdmin):
 @admin.register(Help)
 class HelpAdmin(admin.ModelAdmin):
     list_display = ('date', 'user', 'scream', 'details', 'state')
-# Resto del código…
