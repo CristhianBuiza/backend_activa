@@ -31,6 +31,7 @@ class RegisterView(APIView):
             response_data.update({
                 'role': profile.role,
                 'token': str(refresh.access_token),
+                'refresh': str(refresh),
                 'affiliations': profile.affiliations.all(),
                 'cellphone': profile.cellphone,
                 'additionalCellphone': profile.additionalCellphone
@@ -92,8 +93,7 @@ class LoginView(APIView):
         refresh = RefreshToken.for_user(user)
         access_token = refresh.access_token
        
-        response = NormalizeResponse({'token': str(access_token), 'id': user.id, 'username': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name, "role": profile.role}, status.HTTP_200_OK, "success")
-        response.set_cookie('jwt', str(access_token), httponly=True)
+        response = NormalizeResponse({'token': str(access_token), 'refresh': str(refresh), 'id': user.id, 'username': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name, "role": profile.role}, status.HTTP_200_OK, "success")
         return response
     
 class UpdateView(APIView):
@@ -205,6 +205,7 @@ class ProfileUpdateView(APIView):
 
             )
 class RelationView(APIView):
+    
     def get(self, request):
         try:
             user = get_user_by_token(request)
