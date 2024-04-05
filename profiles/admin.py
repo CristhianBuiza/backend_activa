@@ -21,7 +21,7 @@ class ProfileAdmin(admin.ModelAdmin):
         return obj.user.last_name
     get_last_name.short_description = 'Last Name'
 
-    list_display = ('get_username', 'get_first_name', 'get_last_name' , 'role', 'get_email')
+    list_display = ('get_username', 'get_first_name', 'get_last_name' , 'role', 'get_email', 'cellphone')
     search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name', 'role')
     list_filter = ('role',)
     list_per_page = 10
