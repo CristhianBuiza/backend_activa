@@ -13,7 +13,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 # Create your views here.
 
 class HealthView(APIView):
-    authentication_classes = [ permissions.IsAuthenticated ]
+    permission_classes = [ permissions.IsAuthenticated ]
     parser_classes = (MultiPartParser, FormParser,)
     @swagger_auto_schema(responses={200: HealthSerializer(many=True)})
     def get(self, request):  

@@ -1,6 +1,6 @@
 from app.helpers.get_user_by_token import get_user_by_token
 from drf_yasg import openapi
-from rest_framework import status
+from rest_framework import permissions, status
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.views import APIView
 from app.helpers.normalize_response import NormalizeResponse
@@ -109,18 +109,14 @@ class TaxiServiceView(APIView):
         )
 
 class TaxiServiceDetailView(APIView):
+    permission_classes = [ permissions.IsAuthenticated ]
+    
     @swagger_auto_schema(
         operation_description="Obtiene un servicio de taxi específico por su ID",
         responses={200: ServiceSerializer(), 404: 'No se encontró el servicio de taxi'}
     )
     def get(self, request, pk):
-        try:
-            user = get_user_by_token(request)
-        except AuthenticationFailed:
-            return NormalizeResponse(
-                status=401,
-                message="Usuario no autenticado"
-            )
+        user = request.user
         taxis = TaxiService.objects.filter(user=user, pk=pk).first()
         serializer = TaxiServiceDetailSerializer(taxis)
         if not serializer.data:
@@ -137,13 +133,7 @@ class TaxiServiceDetailView(APIView):
         responses={200: 'Reserva realizada correctamente', 404: 'No se encontró el servicio de taxi'}
     )
     def post(self, request, pk):
-        try:
-            user = get_user_by_token(request)
-        except AuthenticationFailed:
-            return NormalizeResponse(
-                status=401,
-                message="Usuario no autenticado"
-            )
+        user = request.user
         taxi = TaxiService.objects.filter(pk=pk).first()
         if not taxi:
             return NormalizeResponse(

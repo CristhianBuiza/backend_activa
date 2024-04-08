@@ -14,12 +14,26 @@ class HelpView(APIView):
     def post(self, request):
         user = request.user
         screen = request.data.get('screen')
-        print(user)
+        details = request.data.get('details')
+
         if not screen:
             return NormalizeResponse(
                 status=status.HTTP_400_BAD_REQUEST,
                 message="El campo screen es requerido"
             )
+            
+        if details:
+            help = Help.objects.create(
+            screen=screen,
+            details=details,
+            user=user,
+            )
+            serializer = HelpSerializer(help)
+            return NormalizeResponse(
+            data=serializer.data,
+            message="Solicitud de ayuda enviada correctamente"
+            )
+    
         help = Help.objects.create(
             screen=screen,
             user=user
