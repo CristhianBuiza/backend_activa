@@ -29,6 +29,7 @@ THIRD_PARTY_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'dal',
     'dal_select2',
+    'channels',
 ]
 
 LOCAL_APPS = [
@@ -38,7 +39,8 @@ LOCAL_APPS = [
     'health',
     'logs',
     'profiles',
-    'help'
+    'help',
+    'notifications',
 ]
 
 DJANGO_APPS = [
@@ -54,6 +56,14 @@ DJANGO_APPS = [
 
 INSTALLED_APPS = THIRD_PARTY_APPS + LOCAL_APPS + DJANGO_APPS
     
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('redis://127.0.0.1:6379')]
+        }
+    }
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -87,7 +97,9 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'app.wsgi.application'
+# WSGI_APPLICATION = 'app.wsgi.application'
+ASGI_APPLICATION = 'app.asgi.application'
+
 
 
 REST_FRAMEWORK = {
@@ -153,13 +165,13 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 STATICFILES_DIRS = [
-    BASE_DIR / 'static'
+   os.path.join(BASE_DIR, 'static'),
 ]
 
 # Default primary key field type

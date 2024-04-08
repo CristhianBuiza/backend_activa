@@ -1,16 +1,30 @@
-"""
-ASGI config for app project.
+# We had before
+# import os
+# from django.core.asgi import get_asgi_application
 
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
-"""
+# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')
+# application = get_asgi_application()
 
 import os
 
+from django.urls import path
+
+from channels.auth import AuthMiddlewareStack
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.security.websocket import AllowedHostsOriginValidator
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')
+from notifications.consumers import NotificationConsumer
+from .routing import websocket_urlpatterns
 
-application = get_asgi_application()
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')
+django_asgi_app = get_asgi_application()
+
+import app.routing
+
+application = ProtocolTypeRouter({
+    "http": django_asgi_app,
+    "websocket": URLRouter([
+        path("ws/notifications/", NotificationConsumer.as_asgi()),
+    ])
+})

@@ -36,7 +36,7 @@ urlpatterns = [
     
 ]
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     
 admin.site.site_header = "Activa Administrador"
 admin.site.site_title = "Activa Administrador"

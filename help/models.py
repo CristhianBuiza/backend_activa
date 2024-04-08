@@ -6,13 +6,13 @@ class Help(models.Model):
     ('completed', 'Completado'),
     )
     user = models.ForeignKey('auth.User', on_delete=models.CASCADE, verbose_name='Usuario')
-    scream = models.CharField(max_length=100, verbose_name='Pantalla')
+    screen = models.CharField(max_length=100, verbose_name='Pantalla')
     details = models.TextField(max_length=1000, blank=True, null=True, verbose_name='Detalles')
     state = models.CharField(max_length=100, choices=HELP_CHOICES, default='pending', verbose_name='Estado')
     date = models.DateTimeField(auto_now_add=True) 
     
     def __str__(self):
-        return self.scream
+        return self.screen
     
 class RequestAttention(models.Model):
     SERVICE_CHOICES = (
