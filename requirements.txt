@@ -21,3 +21,7 @@ PyYAML==6.0.1
 sqlparse==0.4.4
 uritemplate==4.1.1
 django-autocomplete-light==3.11.0
+channels_redis==4.2.0
+channels==4.1.0
+celery[redis]==5.3.6
+pyfcm==1.5.4

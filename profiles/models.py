@@ -15,7 +15,9 @@ class Profile(models.Model):
     cellphone = models.CharField(max_length=100, null=True, blank=True)
     additionalCellphone = models.CharField(max_length=100, null=True, blank=True)
     affiliations = models.ManyToManyField('self', symmetrical=False, related_name='entornos', blank=True)
-    
+    device_token = models.CharField(max_length=255, blank=True, null=True, unique=True, error_messages={
+    'unique': "Este token de dispositivo ya está registrado.",
+    })
     def add_affiliation(self, profile):
         self.affiliations.add(profile)
         if profile.role == 'Entorno':
