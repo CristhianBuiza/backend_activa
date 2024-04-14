@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
-from rest_framework import status
+from rest_framework import permissions, status
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework import status
@@ -136,6 +136,8 @@ class UpdateView(APIView):
 
             )
 class UserView(APIView):
+    permission_classes = [ permissions.IsAuthenticated ]
+    
     @swagger_auto_schema(
         responses={
             200: UserSerializer,  # Successful response returns user data
@@ -143,21 +145,7 @@ class UserView(APIView):
         }
     )
     def get(self, request):
-        token = request.COOKIES.get('jwt')
-        if not token:
-            return NormalizeResponse(
-            status= status.HTTP_401_UNAUTHORIZED,
-            message= "Usuario no autenticado"
-            )
-        try:
-            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
-        except jwt.ExpiredSignatureError:
-            return NormalizeResponse(
-            status= status.HTTP_401_UNAUTHORIZED,
-            message= "Usuario no autenticado"
-            )
-
-        user = User.objects.filter(id=payload['id']).first()
+        user = request.user
         serializer = UserSerializer(user)
         return NormalizeResponse(
             data=serializer.data,
@@ -231,3 +219,24 @@ class RelationView(APIView):
             message="Usuarios obtenidos correctamente",
             status=status.HTTP_200_OK
         )
+        
+class FmcTokenView(APIView):
+    permission_classes = [ permissions.IsAuthenticated ]
+    def get(self, request):
+        user = request.user
+        profile = Profile.objects.get(user=user)
+        return NormalizeResponse(
+            data=profile.device_token,
+            message="Token de dispositivo obtenido correctamente",
+            status=status.HTTP_200_OK
+        )
+    def post(self, request):
+        user = request.user
+        profile = Profile.objects.get(user=user)
+        profile.device_token = request.data.get('device_token')
+        profile.save()
+        return NormalizeResponse(
+            message="Token de dispositivo actualizado correctamente",
+            status=status.HTTP_200_OK
+        )
+        
